@@ -12,6 +12,100 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Produits {
+  id            Int             @id @default(autoincrement())
+  nom           String          @db.VarChar(250)
+  stock         Int
+  prix          Decimal         @db.Decimal(15, 2)
+  seuil         Int
+  categorie     String          @db.VarChar(250)
+  date_ajout    DateTime        @default(now())
+  code_barre    String          @db.VarChar(100)
+  DetailVentes   DetailVentes[]
+  DetailReceptions DetailReceptions[]
+  Inventaires    Inventaires[]
+  Mouvements     Mouvements[]
+}
+// model Produit {
+//   id            Int             @id @default(autoincrement()) // Identifiant unique du produit
+//   nom           String          @db.VarChar(250)              // Nom du produit (longueur max 250 caractères)
+//   stock         Int                                           // Quantité en stock
+//   prix          Decimal         @db.Decimal(15, 2)            // Prix avec une précision de 15 chiffres, dont 2 après la virgule
+//   seuil         Int                                           // Seuil minimal de stock (quantité à partir de laquelle on doit réapprovisionner)
+//   categorie     String          @db.VarChar(250)              // Catégorie du produit (longueur max 250 caractères)
+//   date_ajout    DateTime                                       // Date d'ajout du produit
+//   code_barre    String          @db.VarChar(100)              // Code-barres du produit (longueur max 100 caractères)
+
+//   // Relations
+//   DetailVente      DetailVente[]                              // Association avec les détails de vente
+//   DetailReception  DetailReception[]                          // Association avec les détails de réception
+//   Inventaire       Inventaire[]                               // Association avec l'inventaire
+//   Mouvement        Mouvement[]                                // Association avec les mouvements de stock (entrées/sorties)
+// }
+
+model DetailVentes {
+  id             Int      @id @default(autoincrement())
+  montant_total  Int
+  quantite_vendue Int
+  // Relations
+  produitId      Int
+  Produits        Produits @relation(fields: [produitId], references: [id])
+  venteId        Int
+  Ventes          Ventes @relation(fields: [venteId], references: [id])
+}
+
+model Ventes {
+  id          Int      @id @default(autoincrement())
+  date_vente  DateTime
+  // Relations
+  detailVentes DetailVentes[]
+  utilisateurId Int
+  Utilisateur  Utilisateurs @relation(fields: [utilisateurId], references: [id])
+}
+
+model DetailReceptions {
+  id        Int      @id @default(autoincrement())
+  quantite  Int
+  // Relations
+  produitId Int
+  Produits   Produits @relation(fields: [produitId], references: [id])
+  receptionId Int
+  Receptions Receptions @relation(fields: [receptionId], references: [id])
+}
+
+model Receptions {
+  id             Int      @id @default(autoincrement())
+  date_reception DateTime
+  // Relations
+  detailReceptions DetailReceptions[]
+  fournisseurId Int
+  Fournisseurs Fournisseurs @relation(fields: [fournisseurId], references: [id])
+}
+
+model Fournisseurs {
+  id      Int      @id @default(autoincrement())
+  nom     String   @db.VarChar(100)
+  // Relations
+  receptions Receptions[]
+}
+
+model Mouvements {
+  id       Int      @id @default(autoincrement())
+  quantite Int
+  produitId Int
+  Produits   Produits @relation(fields: [produitId], references: [id])
+}
+
+model Inventaires {
+  id        Int      @id @default(autoincrement())
+  note      String   @db.Text
+  quantite  Int
+  date_maj  DateTime  @default(now())
+  produitId Int
+  Produits   Produits @relation(fields: [produitId], references: [id])
+}
+
 enum Role {
   ADMIN
   CAISSIER
@@ -21,6 +115,7 @@ model Utilisateurs {
   id          Int        @id @default(autoincrement())
   nom         String
   mot_de_pass String
-  role        Role       @default(ADMIN) 
+  role        Role       @default(CAISSIER) 
   email       String     @unique
+  ventes      Ventes[]
 }
