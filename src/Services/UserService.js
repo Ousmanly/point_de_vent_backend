@@ -3,7 +3,50 @@ import jwt from 'jsonwebtoken';
 import { JWT_SECRET, JWT_EXPIRATION } from '../config/jwt.js';
 import prisma from "../config/prisma.js";
 class UserService{
+    // static async checkUserEmail(email) {
+    //     try {
+    //         const result = await prisma.utilisateurs.findFirst({ where: { email } });
+    //         return result ? true : false;
+    //     } catch (error) {
+    //       throw error;
+    //     }
+    // }
+
+    static async checkUser(email, id = null) {
+        try {
+            if (id) {
+                const users = await prisma.utilisateurs.findMany({
+                    where: {
+                        email: email,
+                        id: {
+                            not: id,
+                        },
+                    },
+                    select: {
+                        id: true,
+                        email: true,
+                    },
+                });
+                return users;
+            } else {
+                const result = await prisma.utilisateurs.findFirst({ where: { email } });
+                return result ? true : false;
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
     
+    ///
+    static async checkUserById(id) {
+        try {
+          const result = await prisma.utilisateurs.findFirst({where: {id}})
+          return result ? true : false;
+        } catch (error) {
+          throw error;
+        }
+    }
+
     static async getUsers(){
         try {
             const users = await prisma.utilisateurs.findMany()
@@ -38,8 +81,10 @@ class UserService{
             let user = null
             const check = await prisma.utilisateurs.findFirst({where: {id}})
 
-            if(check){
-                user = await prisma.utilisateurs.update({where: {
+            if(!check){
+                throw new Error('L\'utilisateur avec cet ID n\'existe pas.');
+            }
+            user = await prisma.utilisateurs.update({where: {
                 id: id,
             }, 
             data:{
@@ -48,7 +93,6 @@ class UserService{
                 role: role, 
                 email: email
             }})
-            }
             return user
     
             } catch (error) {
